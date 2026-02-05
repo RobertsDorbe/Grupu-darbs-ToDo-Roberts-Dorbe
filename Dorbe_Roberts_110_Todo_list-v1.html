@@ -22,24 +22,49 @@
 const list=document.getElementById("task-list")
 const input=document.getElementById("task-input")
 const data=JSON.parse(localStorage.getItem("tasks")||"[]")
-data.forEach(t=>createTask(t))
+data.forEach(t=>createTask(typeof t === 'string' ? {text: t, done: false} : t))
 function addTask(){
-if(!input.value.trim())return
-data.push(input.value)
-localStorage.setItem("tasks",JSON.stringify(data))
-createTask(input.value)
-input.value=""
+	if(!input.value.trim())return
+	const task={text: input.value, done:false}
+	data.push(task)
+	localStorage.setItem("tasks",JSON.stringify(data))
+	createTask(task)
+	input.value=""
 }
-function createTask(text){
-const li=document.createElement("li")
-li.className="list-group-item d-flex justify-content-between align-items-center"
-li.innerHTML=`${text}<button class="btn btn-danger btn-sm">Dzēst</button>`
-li.querySelector("button").onclick=()=>{
-data.splice(data.indexOf(text),1)
-localStorage.setItem("tasks",JSON.stringify(data))
-li.remove()
+function createTask(task){
+	const li=document.createElement("li")
+	li.className="list-group-item"
+	li.innerHTML=`
+		<div class="d-flex align-items-center w-100">
+			<input type="checkbox" class="form-check-input me-2" ${task.done? 'checked':''}>
+			<span class="flex-grow-1 ${task.done? 'text-decoration-line-through':''}">${escapeHtml(task.text)}</span>
+			<button class="btn btn-danger btn-sm ms-2">Dzēst</button>
+		</div>
+	`
+	const checkbox=li.querySelector('input[type="checkbox"]')
+	const span=li.querySelector('span')
+	checkbox.addEventListener('change', ()=>{
+		span.classList.toggle('text-decoration-line-through', checkbox.checked)
+		task.done=checkbox.checked
+		localStorage.setItem("tasks",JSON.stringify(data))
+	})
+	span.addEventListener('click', ()=>{
+		checkbox.checked = !checkbox.checked
+		span.classList.toggle('text-decoration-line-through', checkbox.checked)
+		task.done=checkbox.checked
+		localStorage.setItem("tasks",JSON.stringify(data))
+	})
+	li.querySelector("button").onclick=()=>{
+		const idx = data.indexOf(task)
+		if(idx>-1) data.splice(idx,1)
+		localStorage.setItem("tasks",JSON.stringify(data))
+		li.remove()
+	}
+	list.appendChild(li)
 }
-list.appendChild(li)
+
+function escapeHtml(unsafe) {
+	return String(unsafe).replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]})
 }
 </script>
 </body>
